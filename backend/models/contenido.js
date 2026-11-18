@@ -18,4 +18,13 @@ async function guardarContacto({ nombre, correo, mensaje }) {
   return resultado.insertId;
 }
 
-module.exports = { listarMultimedia, guardarContacto };
+async function listarContactos() {
+  const [filas] = await db.execute(`
+    SELECT id, nombre, correo, mensaje, creado_en
+    FROM contactos
+    ORDER BY id DESC
+  `);
+  return filas;
+}
+
+module.exports = { listarMultimedia, guardarContacto, listarContactos };

@@ -21,8 +21,10 @@ interface Servicio {
 }
 
 interface Producto extends Servicio {
+  categoria: string;
   precio: string;
   especialidad: 0 | 1;
+  imagen: string | null;
 }
 
 interface Multimedia {
@@ -32,11 +34,13 @@ interface Multimedia {
   descripcion: string;
   url: string;
   poster: string | null;
+  fuente_url: string;
 }
 
 interface MensajeChat {
-  autor: 'Tú' | 'CoffeeHouse';
+  autor: 'Tú' | 'Don Grano IA';
   texto: string;
+  hora: string;
 }
 
 @Component({
@@ -53,11 +57,77 @@ export class App implements OnInit {
   readonly multimedia = signal<Multimedia[]>([]);
   readonly errores = signal<string[]>([]);
 
+  readonly categoriaActiva = signal<string>('Todos');
+  readonly busquedaMenu = signal<string>('');
+
+  readonly categorias = computed(() => {
+    const unicas = new Set(this.productos().map((p) => p.categoria || 'Cafés Calientes'));
+    return ['Todos', ...Array.from(unicas)];
+  });
+
+  readonly productosFiltrados = computed(() => {
+    const cat = this.categoriaActiva();
+    const termino = this.busquedaMenu().trim().toLowerCase();
+    return this.productos().filter((producto) => {
+      const coincideCat = cat === 'Todos' || producto.categoria === cat;
+      const coincideTexto =
+        !termino ||
+        producto.nombre.toLowerCase().includes(termino) ||
+        producto.descripcion.toLowerCase().includes(termino) ||
+        producto.categoria.toLowerCase().includes(termino);
+      return coincideCat && coincideTexto;
+    });
+  });
+
   readonly portada = computed(() => this.multimedia().find((medio) => medio.tipo === 'video'));
   readonly fotos = computed(() => this.multimedia().filter((medio) => medio.tipo === 'foto'));
   readonly especialidades = computed(() =>
     this.productos().filter((producto) => producto.especialidad === 1),
   );
+
+  readonly etapasProceso = [
+    {
+      paso: '01',
+      titulo: 'Cosecha de Altura (1.650 msnm)',
+      detalle: 'Seleccionamos microlotes 100% arábica cultivados bajo sombra en Caranavi y los Yungas.',
+    },
+    {
+      paso: '02',
+      titulo: 'Tueste Artesanal Semanal',
+      detalle: 'Tostamos en lotes pequeños cada semana para resaltar notas de cacao, panela y cítricos.',
+    },
+    {
+      paso: '03',
+      titulo: 'Molienda al Instante',
+      detalle: 'Molemos cada dosis segundos antes de extraer para conservar todos los aceites esenciales.',
+    },
+    {
+      paso: '04',
+      titulo: 'Extracción de Barista',
+      detalle: 'Calibramos temperatura, presión y tiempo en máquina de espresso o métodos de filtrado.',
+    },
+  ];
+
+  readonly testimonios = [
+    {
+      nombre: 'Valeria Céspedes',
+      rol: 'Diseñadora & Cliente Frecuente',
+      comentario: 'El Cold Brew Cítrico & Miel y el ambiente de coworking son insuperables en Cochabamba. El internet es rapidísimo.',
+      estrellas: '★★★★★',
+    },
+    {
+      nombre: 'Mauricio Hinojosa',
+      rol: 'Catador de Café',
+      comentario: 'Se nota el tueste fresco en cada taza. El Mocaccino con cacao al 70% y el croissant recién salido del horno son mis favoritos.',
+      estrellas: '★★★★★',
+    },
+    {
+      nombre: 'Andrea Villarroel',
+      rol: 'Arquitecta',
+      comentario: 'La atención de los baristas en la barra de filtrados V60 y Chemex convierte tomar café en toda una experiencia.',
+      estrellas: '★★★★★',
+    },
+  ];
 
   readonly reproducirAuto = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   readonly videoEnMarcha = signal(false);
@@ -65,15 +135,26 @@ export class App implements OnInit {
   readonly enviandoContacto = signal(false);
   readonly estadoContacto = signal('');
 
+  readonly chatAbierto = signal(false);
   readonly esperandoChat = signal(false);
   readonly errorChat = signal('');
-  readonly chat = signal<MensajeChat[]>([]);
+  readonly chat = signal<MensajeChat[]>([
+    {
+      autor: 'Don Grano IA',
+      texto: '¡Bienvenido a Aroma Andino Café! Soy Don Grano IA, tu barista virtual impulsado por Ollama + Gemma 3. ¿Deseas conocer nuestras especialidades, el menú del local, precios u horarios?',
+      hora: this.obtenerHora(),
+    },
+  ]);
 
   ngOnInit(): void {
     this.cargar('cafeteria', this.cafeteria, 'los datos de la cafetería');
     this.cargar('servicios', this.servicios, 'los servicios');
     this.cargar('productos', this.productos, 'el menú');
     this.cargar('multimedia', this.multimedia, 'el video y las fotos');
+  }
+
+  private obtenerHora(): string {
+    return new Date().toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
   }
 
   private cargar<T>(ruta: string, destino: WritableSignal<T>, etiqueta: string): void {
@@ -83,12 +164,49 @@ export class App implements OnInit {
     });
   }
 
+  seleccionarCategoria(categoria: string): void {
+    this.categoriaActiva.set(categoria);
+  }
+
+  iniciarVideo(video: HTMLVideoElement): void {
+    video.muted = true;
+    if (this.reproducirAuto && video.paused) {
+      void video.play().catch(() => this.videoEnMarcha.set(false));
+    }
+  }
+
   alternarVideo(video: HTMLVideoElement): void {
+    video.muted = true;
     if (video.paused) {
       void video.play().catch(() => this.videoEnMarcha.set(false));
     } else {
       video.pause();
     }
+  }
+
+  alternarChat(): void {
+    this.chatAbierto.update((abierto) => !abierto);
+  }
+
+  limpiarChat(): void {
+    this.chat.set([
+      {
+        autor: 'Don Grano IA',
+        texto: 'Historial reiniciado. ¡Pregúntame sobre cualquier café, postre, servicio o precio de Aroma Andino Café!',
+        hora: this.obtenerHora(),
+      },
+    ]);
+    this.errorChat.set('');
+  }
+
+  consultarProductoIA(producto: Producto): void {
+    this.chatAbierto.set(true);
+    this.enviarTextoChat(`Cuéntame sobre "${producto.nombre}", sus ingredientes, precio y con qué otro producto del menú me recomiendas acompañarlo.`);
+  }
+
+  preguntaRapida(texto: string): void {
+    this.chatAbierto.set(true);
+    this.enviarTextoChat(texto);
   }
 
   enviarContacto(formulario: NgForm): void {
@@ -113,20 +231,30 @@ export class App implements OnInit {
   enviarPregunta(formulario: NgForm): void {
     const prompt = String(formulario.value.pregunta ?? '').trim();
     if (!prompt || formulario.invalid || this.esperandoChat()) return;
+    formulario.resetForm();
+    this.enviarTextoChat(prompt);
+  }
 
-    this.chat.update((mensajes) => [...mensajes, { autor: 'Tú', texto: prompt }]);
+  private enviarTextoChat(prompt: string): void {
+    if (!prompt || this.esperandoChat()) return;
+
+    this.chat.update((mensajes) => [
+      ...mensajes,
+      { autor: 'Tú', texto: prompt, hora: this.obtenerHora() },
+    ]);
     this.errorChat.set('');
     this.esperandoChat.set(true);
-    formulario.resetForm();
 
     this.http.post<{ response: string }>('/api/chatbot', { prompt })
       .pipe(finalize(() => this.esperandoChat.set(false)))
       .subscribe({
-        next: (datos) => this.chat.update((mensajes) => [
-          ...mensajes, { autor: 'CoffeeHouse', texto: datos.response },
-        ]),
+        next: (datos) =>
+          this.chat.update((mensajes) => [
+            ...mensajes,
+            { autor: 'Don Grano IA', texto: datos.response, hora: this.obtenerHora() },
+          ]),
         error: (respuesta) => {
-          this.errorChat.set(respuesta.error?.error || 'No se pudo consultar el chatbot.');
+          this.errorChat.set(respuesta.error?.error || 'No se pudo consultar a Don Grano IA.');
         },
       });
   }

@@ -1,59 +1,121 @@
 <header class="barra">
-  <a class="marca" href="#inicio">{{ cafeteria()?.nombre }}</a>
+  <a class="marca" href="#inicio">
+    <span class="marca-icono" aria-hidden="true">☕</span>
+    <span class="marca-textos">
+      <strong>{{ cafeteria()?.nombre || 'Aroma Andino Café' }}</strong>
+      <small>Tostaduría & Especialidad · Bolivia</small>
+    </span>
+  </a>
+
   <nav aria-label="Navegación principal">
     <a href="#inicio">Inicio</a>
     <a href="#servicios">Servicios</a>
     <a href="#especialidades">Especialidades</a>
+    <a href="#menu" class="enlace-destacado">Menú</a>
+    <a href="#proceso">Proceso</a>
     <a href="#nosotros">Nosotros</a>
     <a href="#precios">Precios</a>
-    <a href="#contacto">Contacto</a>
+    <a href="#testimonios">Opiniones</a>
+    <a href="#contacto">Contactos</a>
   </nav>
+
+  <button type="button" class="boton-nav-ia" (click)="alternarChat()">
+    <span>✨ Don Grano IA</span>
+  </button>
 </header>
 
 <main>
+  <!-- 1. INICIO: VIDEO EN BUCLE + INDICADORES -->
   <section id="inicio" class="portada">
     @if (portada(); as medio) {
       <video
         #video
         [src]="medio.url"
+        muted
         [muted]="true"
         [autoplay]="reproducirAuto"
         [attr.poster]="medio.poster"
         loop
         playsinline
-        preload="metadata"
+        preload="auto"
+        (loadedmetadata)="iniciarVideo(video)"
         (play)="videoEnMarcha.set(true)"
         (pause)="videoEnMarcha.set(false)"
         aria-hidden="true">
       </video>
 
       <div class="portada-contenido">
-        <p class="ubicacion">{{ cafeteria()?.ciudad }}</p>
+        <div class="insignia-portada">
+          <span class="punto-vivo"></span>
+          <span>{{ cafeteria()?.ciudad || 'Cochabamba, Bolivia' }} · Cosecha de Altura 1.650 msnm</span>
+        </div>
+
         <h1>{{ medio.titulo }}</h1>
-        <p>{{ medio.descripcion }}</p>
-        <a class="boton" href="#precios">Ver menú</a>
+        <p class="portada-subtitulo">{{ medio.descripcion }}</p>
+
+        <div class="portada-acciones">
+          <a class="boton boton-primario" href="#menu">Explorar Menú del Local</a>
+          <a class="boton boton-secundario" href="#especialidades">Ver Especialidades</a>
+          <button type="button" class="boton boton-fantasma" (click)="alternarChat()">
+            Hablar con Don Grano IA
+          </button>
+        </div>
       </div>
 
       <button class="control-video" type="button" (click)="alternarVideo(video)">
-        {{ videoEnMarcha() ? 'Pausar video' : 'Reproducir video' }}
+        {{ videoEnMarcha() ? '⏸ Pausar video de fondo' : '▶ Reproducir video de fondo' }}
       </button>
     } @else {
       <div class="portada-contenido">
-        <h1>{{ cafeteria()?.nombre }}</h1>
-        <a class="boton" href="#precios">Ver menú</a>
+        <h1>{{ cafeteria()?.nombre || 'Aroma Andino Café' }}</h1>
+        <div class="portada-acciones">
+          <a class="boton boton-primario" href="#menu">Explorar Menú del Local</a>
+        </div>
       </div>
     }
+  </section>
+
+  <!-- BARRA DE MÉTRICAS DESTACADAS -->
+  <section class="franja-metricas" aria-label="Indicadores de calidad">
+    <div class="metricas-contenedor">
+      <div class="metrica-item">
+        <strong>100% Arábica</strong>
+        <span>Granos selectos de Caranavi y Yungas</span>
+      </div>
+      <div class="metrica-item">
+        <strong>Tueste Semanal</strong>
+        <span>Microlotes tostados en nuestra tienda</span>
+      </div>
+      <div class="metrica-item">
+        <strong>{{ productos().length || 10 }} Productos</strong>
+        <span>Cafés de autor, filtrados y pastelería</span>
+      </div>
+      <div class="metrica-item">
+        <strong>4.9 ★ Calificación</strong>
+        <span>Salón, terraza y zona coworking Wi-Fi</span>
+      </div>
+    </div>
   </section>
 
   @if (errores().length) {
     <p class="aviso" role="alert">{{ errores().join(' ') }}</p>
   }
 
+  <!-- 2. SERVICIOS -->
   <section class="bloque" id="servicios">
-    <h2>Servicios</h2>
-    <div class="rejilla">
-      @for (servicio of servicios(); track servicio.id) {
-        <article class="tarjeta">
+    <div class="encabezado-seccion">
+      <span class="etiqueta-seccion">EXPERIENCIA EN TIENDA</span>
+      <h2>Nuestros Servicios</h2>
+      <p>Todo lo que {{ cafeteria()?.nombre || 'Aroma Andino Café' }} ofrece para tu día a día, estudio o reuniones.</p>
+    </div>
+
+    <div class="rejilla rejilla-servicios">
+      @for (servicio of servicios(); track servicio.id; let idx = $index) {
+        <article class="tarjeta tarjeta-servicio">
+          <div class="servicio-tope">
+            <span class="numero-servicio">0{{ idx + 1 }}</span>
+            <span class="estado-servicio">Disponible hoy</span>
+          </div>
           <h3>{{ servicio.nombre }}</h3>
           <p>{{ servicio.descripcion }}</p>
         </article>
@@ -61,91 +123,357 @@
     </div>
   </section>
 
+  <!-- 3. ESPECIALIDADES DE AUTOR -->
   <section class="bloque" id="especialidades">
-    <h2>Especialidades</h2>
-    <div class="rejilla">
+    <div class="encabezado-seccion">
+      <span class="etiqueta-seccion">SELECCIÓN DEL BARISTA</span>
+      <h2>Especialidades de la Casa</h2>
+      <p>Recetas exclusivas elaboradas con doble extracción de espresso, cacao orgánico boliviano y repostería fina.</p>
+    </div>
+
+    <div class="rejilla rejilla-especialidades">
       @for (producto of especialidades(); track producto.id) {
-        <article class="tarjeta">
-          <h3>{{ producto.nombre }}</h3>
-          <p>{{ producto.descripcion }}</p>
-          <strong class="precio">Bs {{ producto.precio }}</strong>
+        <article class="tarjeta tarjeta-producto-destacado">
+          <div class="contenedor-img-producto">
+            @if (producto.imagen) {
+              <img class="tarjeta-img" [src]="producto.imagen" [alt]="producto.nombre" loading="lazy">
+            }
+            <span class="badge-especialidad">★ Especialidad</span>
+            <span class="badge-categoria">{{ producto.categoria }}</span>
+          </div>
+          <div class="cuerpo-producto">
+            <div class="fila-titulo-precio">
+              <h3>{{ producto.nombre }}</h3>
+              <strong class="precio-grande">Bs {{ producto.precio }}</strong>
+            </div>
+            <p>{{ producto.descripcion }}</p>
+            <button type="button" class="boton-consultar-ia" (click)="consultarProductoIA(producto)">
+              ✨ Consultar a Don Grano IA sobre este producto
+            </button>
+          </div>
         </article>
       }
     </div>
   </section>
 
+  <!-- 4. NUEVO APARTADO: MENÚ COMPLETO DE PRODUCTOS DEL LOCAL -->
+  <section class="bloque" id="menu">
+    <div class="encabezado-seccion">
+      <span class="etiqueta-seccion">CATÁLOGO COMPLETO EXTRAÍDO POR API</span>
+      <h2>Menú de Productos del Local</h2>
+      <p>Explora todos los cafés calientes, bebidas frías, granos de especialidad y postres artesanales disponibles en barra.</p>
+    </div>
+
+    <div class="controles-menu">
+      <div class="filtros-categorias" role="tablist" aria-label="Filtrar menú por categoría">
+        @for (cat of categorias(); track cat) {
+          <button
+            type="button"
+            class="chip-categoria"
+            [class.activo]="categoriaActiva() === cat"
+            (click)="seleccionarCategoria(cat)">
+            {{ cat }}
+          </button>
+        }
+      </div>
+
+      <div class="buscador-menu">
+        <input
+          type="search"
+          [ngModel]="busquedaMenu()"
+          (ngModelChange)="busquedaMenu.set($event)"
+          placeholder="Buscar café, postre o ingrediente..."
+          aria-label="Buscar producto en el menú">
+      </div>
+    </div>
+
+    <div class="rejilla rejilla-menu">
+      @for (producto of productosFiltrados(); track producto.id) {
+        <article class="tarjeta tarjeta-menu-item">
+          @if (producto.imagen) {
+            <div class="menu-img-wrap">
+              <img class="menu-img" [src]="producto.imagen" [alt]="producto.nombre" loading="lazy">
+              @if (producto.especialidad === 1) {
+                <span class="tag-estrella">★ Top</span>
+              }
+            </div>
+          }
+          <div class="menu-item-info">
+            <span class="menu-item-cat">{{ producto.categoria }}</span>
+            <h3>{{ producto.nombre }}</h3>
+            <p>{{ producto.descripcion }}</p>
+            <div class="menu-item-pie">
+              <strong class="precio">Bs {{ producto.precio }}</strong>
+              <button type="button" class="link-ia" (click)="consultarProductoIA(producto)">
+                Preguntar al Barista IA →
+              </button>
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <p class="sin-resultados">No se encontraron productos con ese filtro. Prueba otra categoría.</p>
+      }
+    </div>
+  </section>
+
+  <!-- 5. NUEVO APARTADO: PROCESO DEL GRANO A LA TAZA -->
+  <section class="bloque" id="proceso">
+    <div class="encabezado-seccion">
+      <span class="etiqueta-seccion">TRAZABILIDAD & CALIDAD</span>
+      <h2>Del Grano de Altura a tu Taza</h2>
+      <p>Cuidamos cada etapa del café boliviano para garantizar una taza limpia, aromática y balanceada.</p>
+    </div>
+
+    <div class="rejilla rejilla-proceso">
+      @for (item of etapasProceso; track item.paso) {
+        <article class="tarjeta tarjeta-proceso">
+          <span class="paso-circulo">{{ item.paso }}</span>
+          <h3>{{ item.titulo }}</h3>
+          <p>{{ item.detalle }}</p>
+        </article>
+      }
+    </div>
+  </section>
+
+  <!-- 6. NOSOTROS + GALERÍA DE LA TIENDA -->
   <section class="bloque" id="nosotros">
-    <h2>Nosotros</h2>
+    <div class="encabezado-seccion">
+      <span class="etiqueta-seccion">NUESTRA HISTORIA & ESPACIO</span>
+      <h2>Sobre {{ cafeteria()?.nombre || 'Aroma Andino Café' }}</h2>
+    </div>
+
     @if (cafeteria(); as datos) {
-      <p>{{ datos.historia }}</p>
-      <p><strong>Dirección</strong> {{ datos.direccion }}, {{ datos.ciudad }}</p>
-      <p><strong>Horario</strong> {{ datos.horario }}</p>
-      <p><strong>Teléfono</strong> {{ datos.telefono || 'Por confirmar' }}</p>
+      <div class="nosotros-layout">
+        <div class="nosotros-historia">
+          <h3>Pasión por el café boliviano de especialidad</h3>
+          <p>{{ datos.historia }}</p>
+          <div class="sello-calidad">
+            <span>🌱 Comercio Justo con Productores de los Yungas</span>
+            <span>🔥 Tostaduría Propia en Cochabamba</span>
+          </div>
+        </div>
+
+        <div class="nosotros-datos">
+          <div class="dato-ficha">
+            <span class="dato-etiqueta">📍 Dirección de la Tienda</span>
+            <strong>{{ datos.direccion }}</strong>
+            <span>{{ datos.ciudad }}</span>
+          </div>
+          <div class="dato-ficha">
+            <span class="dato-etiqueta">📞 Teléfonos de Atención</span>
+            <strong>{{ datos.telefono || '+591 4 4529180' }}</strong>
+            <span>Consultas y reservas grupales</span>
+          </div>
+          <div class="dato-ficha">
+            <span class="dato-etiqueta">🕒 Horario de Atención</span>
+            <strong>{{ datos.horario }}</strong>
+            <span>Atención continua en salón y para llevar</span>
+          </div>
+        </div>
+      </div>
     }
 
+    <h3 class="subtitulo-galeria">Galería de Nuestra Tienda</h3>
     <div class="galeria">
       @for (foto of fotos(); track foto.id) {
-        <figure>
+        <figure class="galeria-card">
           <img [src]="foto.url" [alt]="foto.descripcion" loading="lazy">
-          <figcaption>{{ foto.titulo }} · Imagen de referencia</figcaption>
+          <figcaption>
+            <strong>{{ foto.titulo }}</strong>
+            <span>{{ foto.descripcion }}</span>
+          </figcaption>
         </figure>
       }
     </div>
   </section>
 
+  <!-- 7. PRECIOS / CARTA RÁPIDA -->
   <section class="bloque" id="precios">
-    <h2>Precios</h2>
-    <ul class="lista-precios">
-      @for (producto of productos(); track producto.id) {
-        <li>
-          <span>{{ producto.nombre }}</span>
-          <strong class="precio">Bs {{ producto.precio }}</strong>
-        </li>
-      }
-    </ul>
+    <div class="encabezado-seccion">
+      <span class="etiqueta-seccion">TARIFARIO OFICIAL EN BOLIVIANOS</span>
+      <h2>Tablero de Precios</h2>
+      <p>Resumen rápido de precios de todas nuestras bebidas, granos y repostería artesanal.</p>
+    </div>
+
+    <div class="tablero-precios">
+      <ul class="lista-precios">
+        @for (producto of productos(); track producto.id) {
+          <li>
+            <div class="precio-info">
+              <div class="precio-encabezado">
+                <strong>{{ producto.nombre }}</strong>
+                <span class="mini-tag">{{ producto.categoria }}</span>
+                @if (producto.especialidad === 1) {
+                  <span class="mini-tag-oro">Especialidad</span>
+                }
+              </div>
+              <small>{{ producto.descripcion }}</small>
+            </div>
+            <span class="linea-puntos" aria-hidden="true"></span>
+            <strong class="precio">Bs {{ producto.precio }}</strong>
+          </li>
+        }
+      </ul>
+    </div>
   </section>
 
+  <!-- 8. NUEVO APARTADO: OPINIONES DE CLIENTES -->
+  <section class="bloque" id="testimonios">
+    <div class="encabezado-seccion">
+      <span class="etiqueta-seccion">COMUNIDAD CAFETERA</span>
+      <h2>Lo Que Dicen Nuestros Clientes</h2>
+    </div>
+
+    <div class="rejilla">
+      @for (item of testimonios; track item.nombre) {
+        <article class="tarjeta tarjeta-testimonio">
+          <div class="estrellas">{{ item.estrellas }}</div>
+          <p class="comentario-texto">“{{ item.comentario }}”</p>
+          <div class="autor-testimonio">
+            <strong>{{ item.nombre }}</strong>
+            <span>{{ item.rol }}</span>
+          </div>
+        </article>
+      }
+    </div>
+  </section>
+
+  <!-- 9. CONTACTOS -->
   <section class="bloque" id="contacto">
-    <h2>Contacto</h2>
-    <form class="formulario" #contacto="ngForm" (ngSubmit)="enviarContacto(contacto)">
-      <label for="nombre">Nombre</label>
-      <input id="nombre" name="nombre" ngModel required maxlength="100" autocomplete="name">
+    <div class="encabezado-seccion">
+      <span class="etiqueta-seccion">RESERVAS, SUGERENCIAS & EVENTOS</span>
+      <h2>Contáctanos</h2>
+      <p>Déjanos tu mensaje para reservas de mesa, pedidos corporativos o consultas y queda registrado en nuestra base de datos MySQL.</p>
+    </div>
 
-      <label for="correo">Correo electrónico</label>
-      <input id="correo" name="correo" type="email" ngModel email required
-        maxlength="254" autocomplete="email">
+    <div class="contacto-layout">
+      <div class="contacto-lateral">
+        <div class="tarjeta">
+          <h3>Visítanos en Cochabamba</h3>
+          <p>{{ cafeteria()?.direccion }}</p>
+          <p><strong>Teléfonos:</strong> {{ cafeteria()?.telefono }}</p>
+          <p><strong>Horarios:</strong> {{ cafeteria()?.horario }}</p>
+          <hr class="divisor">
+          <p>¿Tienes una duda rápida sobre precios o ingredientes? Nuestro barista virtual <strong>Don Grano IA</strong> responde al instante.</p>
+          <button type="button" class="boton boton-secundario" (click)="alternarChat()">
+            Abrir Don Grano IA
+          </button>
+        </div>
+      </div>
 
-      <label for="mensaje">Mensaje</label>
-      <textarea id="mensaje" name="mensaje" ngModel required maxlength="1000" rows="5"></textarea>
+      <form class="formulario tarjeta" #contacto="ngForm" (ngSubmit)="enviarContacto(contacto)">
+        <h3>Formulario de Contacto Directo</h3>
 
-      <button class="boton" type="submit" [disabled]="contacto.invalid || enviandoContacto()">
-        {{ enviandoContacto() ? 'Enviando…' : 'Enviar mensaje' }}
-      </button>
-      <p role="status">{{ estadoContacto() }}</p>
-    </form>
+        <label for="nombre">Nombre completo</label>
+        <input id="nombre" name="nombre" ngModel required maxlength="100" autocomplete="name" placeholder="Ej. Camila Rojas">
+
+        <label for="correo">Correo electrónico</label>
+        <input id="correo" name="correo" type="email" ngModel email required
+          maxlength="254" autocomplete="email" placeholder="camila@ejemplo.com">
+
+        <label for="mensaje">Mensaje o solicitud</label>
+        <textarea id="mensaje" name="mensaje" ngModel required maxlength="1000" rows="4"
+          placeholder="Escribe tu consulta, comentario o solicitud de reserva..."></textarea>
+
+        <button class="boton boton-primario" type="submit" [disabled]="contacto.invalid || enviandoContacto()">
+          {{ enviandoContacto() ? 'Enviando mensaje…' : 'Enviar mensaje a Aroma Andino' }}
+        </button>
+
+        @if (estadoContacto()) {
+          <p class="estado-envio" role="status">{{ estadoContacto() }}</p>
+        }
+      </form>
+    </div>
   </section>
 </main>
 
-<details class="chat">
-  <summary>Chat CoffeeHouse</summary>
-  <div class="chat-contenido">
-    <div class="chat-mensajes" role="log" aria-label="Conversación">
-      @for (mensaje of chat(); track $index) {
-        <p class="burbuja"><strong>{{ mensaje.autor }}</strong> {{ mensaje.texto }}</p>
-      }
+<footer class="pie-pagina">
+  <div class="pie-contenedor">
+    <div>
+      <strong>☕ {{ cafeteria()?.nombre || 'Aroma Andino Café' }}</strong>
+      <p>{{ cafeteria()?.direccion }} · {{ cafeteria()?.ciudad }}</p>
     </div>
-    @if (esperandoChat()) {
-      <p role="status">Consultando…</p>
-    }
-    @if (errorChat()) {
-      <p role="alert">{{ errorChat() }}</p>
-    }
-    <form class="formulario" #consulta="ngForm" (ngSubmit)="enviarPregunta(consulta)">
-      <label for="pregunta">Pregunta sobre la cafetería</label>
-      <input id="pregunta" name="pregunta" ngModel required maxlength="500">
-      <button class="boton" type="submit" [disabled]="consulta.invalid || esperandoChat()">
-        Enviar pregunta
-      </button>
-    </form>
+    <div class="pie-enlaces">
+      <a href="#inicio">Inicio</a>
+      <a href="#menu">Menú</a>
+      <a href="#especialidades">Especialidades</a>
+      <a href="#precios">Precios</a>
+      <a href="#contacto">Contactos</a>
+    </div>
+    <p class="pie-creditos">Conectado con Node.js + MySQL + Ollama (Gemma 3) · Multimedia libre de Pexels</p>
   </div>
-</details>
+</footer>
+
+<!-- 10. CHATBOT FLOTANTE: DON GRANO IA -->
+<div class="chat-contenedor">
+  @if (chatAbierto()) {
+    <section class="chat-ventana" role="dialog" aria-label="Asistente Don Grano IA">
+      <header class="chat-cabecera">
+        <div class="chat-identidad">
+          <span class="chat-avatar">☕</span>
+          <div>
+            <strong>Don Grano IA · Barista Virtual</strong>
+            <small><span class="punto-vivo"></span> Impulsado por Ollama + Gemma 3</small>
+          </div>
+        </div>
+        <div class="chat-acciones-top">
+          <button type="button" class="btn-icono" (click)="limpiarChat()" title="Reiniciar conversación">↺</button>
+          <button type="button" class="btn-icono" (click)="alternarChat()" title="Cerrar chat">✕</button>
+        </div>
+      </header>
+
+      <div class="chat-sugerencias">
+        <button type="button" (click)="preguntaRapida('¿Cuáles son las especialidades de la casa y sus precios?')">
+          ★ Especialidades
+        </button>
+        <button type="button" (click)="preguntaRapida('¿Qué postres y cafés tienen en el menú completo?')">
+          🍰 Ver Menú
+        </button>
+        <button type="button" (click)="preguntaRapida('¿Cuál es la dirección, teléfono y horario de atención?')">
+          📍 Ubicación y horario
+        </button>
+      </div>
+
+      <div class="chat-mensajes" role="log" aria-live="polite" aria-label="Conversación con Don Grano IA">
+        @for (mensaje of chat(); track $index) {
+          <div class="fila-burbuja" [class.propia]="mensaje.autor === 'Tú'">
+            <div class="burbuja">
+              <div class="burbuja-meta">
+                <strong>{{ mensaje.autor }}</strong>
+                <span>{{ mensaje.hora }}</span>
+              </div>
+              <p>{{ mensaje.texto }}</p>
+            </div>
+          </div>
+        }
+        @if (esperandoChat()) {
+          <div class="estado-pensando" role="status">
+            <span>☕ Don Grano IA está preparando tu respuesta con Gemma 3…</span>
+          </div>
+        }
+        @if (errorChat()) {
+          <p class="error-chat" role="alert">{{ errorChat() }}</p>
+        }
+      </div>
+
+      <form class="chat-formulario" #consulta="ngForm" (ngSubmit)="enviarPregunta(consulta)">
+        <input
+          id="pregunta"
+          name="pregunta"
+          ngModel
+          required
+          maxlength="500"
+          [disabled]="esperandoChat()"
+          placeholder="Pregúntale a Don Grano IA sobre el menú o precios...">
+        <button class="boton boton-primario" type="submit" [disabled]="consulta.invalid || esperandoChat()">
+          Enviar
+        </button>
+      </form>
+    </section>
+  }
+
+  <button type="button" class="chat-lanzador" (click)="alternarChat()">
+    <span class="lanzador-icono">☕</span>
+    <span>{{ chatAbierto() ? 'Cerrar Don Grano IA' : 'Don Grano IA · Barista' }}</span>
+  </button>
+</div>

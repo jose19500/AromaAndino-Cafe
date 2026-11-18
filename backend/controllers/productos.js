@@ -1,4 +1,4 @@
-const { listarProductos } = require("../models/productos");
+const { listarProductos, listarEspecialidades } = require("../models/productos");
 
 async function consultarProductos(req, res, next) {
   try {
@@ -8,4 +8,12 @@ async function consultarProductos(req, res, next) {
   }
 }
 
-module.exports = { consultarProductos };
+async function consultarEspecialidades(req, res, next) {
+  try {
+    res.json(await listarEspecialidades());
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { consultarProductos, consultarEspecialidades };
